@@ -70,3 +70,6 @@ jupyter notebook notebook.ipynb
 ## Requirements
 
 See `requirements.txt`
+## Demo
+
+Open `demo.html` in any browser to try the price estimator — no installation required.
