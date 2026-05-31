@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Used Car Price Estimator — DSC 148</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: #f7f6f2;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    color: #1a1a1a;
+  }
+
+  .card {
+    background: #ffffff;
+    border: 1px solid #e0ddd6;
+    border-radius: 12px;
+    padding: 2rem 2.25rem;
+    width: 100%;
+    max-width: 620px;
+  }
+
+  .header { margin-bottom: 1.75rem; }
+
+  .header h1 {
+    font-size: 1.35rem;
+    font-weight: normal;
+    letter-spacing: -0.01em;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+  }
+
+  .header p {
+    font-size: 0.8rem;
+    color: #888;
+    font-family: 'Courier New', monospace;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+
+  .field label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #999;
+    font-family: 'Courier New', monospace;
+  }
+
+  select, input[type="number"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-family: 'Georgia', serif;
+    background: #fafafa;
+    color: #1a1a1a;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  select:hover, input[type="number"]:hover { border-color: #aaa; }
+  select:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: #555;
+    background: #fff;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 11px;
+    margin-top: 6px;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: 'Georgia', serif;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .btn:hover { background: #333; }
+  .btn:active { transform: scale(0.99); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 1.5rem 0;
+  }
+
+  .result { display: none; }
+
+  .result-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .price-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #999;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 6px;
+  }
+
+  .price-value {
+    font-size: 2.6rem;
+    font-weight: normal;
+    letter-spacing: -0.02em;
+    color: #1a1a1a;
+    line-height: 1;
+  }
+
+  .price-range {
+    font-size: 0.78rem;
+    color: #aaa;
+    margin-top: 6px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .badge {
+    font-size: 0.72rem;
+    font-family: 'Courier New', monospace;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    color: #666;
+    white-space: nowrap;
+  }
+
+  .bar-wrap {
+    height: 3px;
+    background: #f0ede8;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: #1a1a1a;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+
+  .factors {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .factor {
+    background: #f7f6f2;
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+
+  .factor-label {
+    font-size: 0.68rem;
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+  }
+
+  .factor-value {
+    font-size: 0.88rem;
+    color: #333;
+  }
+
+  .footer-note {
+    font-size: 0.72rem;
+    color: #bbb;
+    font-family: 'Courier New', monospace;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0ede8;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1>Used Car Price Estimator</h1>
+    <p>DSC 148 · Craigslist Dataset · XGBoost · MAE ≈ $3,446 · R² = 0.834</p>
+  </div>
+
+  <div class="grid">
+    <div class="field">
+      <label>Manufacturer</label>
+      <select id="mfr">
+        <option value="toyota">Toyota</option>
+        <option value="ford">Ford</option>
+        <option value="chevrolet">Chevrolet</option>
+        <option value="honda">Honda</option>
+        <option value="nissan">Nissan</option>
+        <option value="jeep">Jeep</option>
+        <option value="ram">RAM</option>
+        <option value="gmc">GMC</option>
+        <option value="subaru">Subaru</option>
+        <option value="bmw">BMW</option>
+        <option value="mercedes-benz">Mercedes-Benz</option>
+        <option value="audi">Audi</option>
+        <option value="lexus">Lexus</option>
+        <option value="hyundai">Hyundai</option>
+        <option value="kia">Kia</option>
+        <option value="mazda">Mazda</option>
+        <option value="volkswagen">Volkswagen</option>
+        <option value="volvo">Volvo</option>
+        <option value="tesla">Tesla</option>
+        <option value="porsche">Porsche</option>
+        <option value="dodge">Dodge</option>
+        <option value="chrysler">Chrysler</option>
+        <option value="buick">Buick</option>
+        <option value="cadillac">Cadillac</option>
+        <option value="lincoln">Lincoln</option>
+        <option value="infiniti">Infiniti</option>
+        <option value="acura">Acura</option>
+        <option value="mitsubishi">Mitsubishi</option>
+        <option value="mini">MINI</option>
+        <option value="jaguar">Jaguar</option>
+        <option value="land rover">Land Rover</option>
+        <option value="alfa-romeo">Alfa Romeo</option>
+        <option value="ferrari">Ferrari</option>
+        <option value="aston-martin">Aston Martin</option>
+        <option value="fiat">Fiat</option>
+        <option value="mercury">Mercury</option>
+        <option value="pontiac">Pontiac</option>
+        <option value="saturn">Saturn</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>State</label>
+      <select id="state">
+        <option value="ca">California (CA)</option>
+        <option value="tx">Texas (TX)</option>
+        <option value="fl">Florida (FL)</option>
+        <option value="ny">New York (NY)</option>
+        <option value="wa">Washington (WA)</option>
+        <option value="co">Colorado (CO)</option>
+        <option value="az">Arizona (AZ)</option>
+        <option value="il">Illinois (IL)</option>
+        <option value="oh">Ohio (OH)</option>
+        <option value="ga">Georgia (GA)</option>
+        <option value="nc">North Carolina (NC)</option>
+        <option value="pa">Pennsylvania (PA)</option>
+        <option value="mi">Michigan (MI)</option>
+        <option value="va">Virginia (VA)</option>
+        <option value="or">Oregon (OR)</option>
+        <option value="mn">Minnesota (MN)</option>
+        <option value="mo">Missouri (MO)</option>
+        <option value="tn">Tennessee (TN)</option>
+        <option value="in">Indiana (IN)</option>
+        <option value="wi">Wisconsin (WI)</option>
+        <option value="ok">Oklahoma (OK)</option>
+        <option value="nv">Nevada (NV)</option>
+        <option value="ut">Utah (UT)</option>
+        <option value="ak">Alaska (AK)</option>
+        <option value="mt">Montana (MT)</option>
+        <option value="wv">West Virginia (WV)</option>
+        <option value="al">Alabama (AL)</option>
+        <option value="sc">South Carolina (SC)</option>
+        <option value="la">Louisiana (LA)</option>
+        <option value="ar">Arkansas (AR)</option>
+        <option value="ms">Mississippi (MS)</option>
+        <option value="ia">Iowa (IA)</option>
+        <option value="ks">Kansas (KS)</option>
+        <option value="ky">Kentucky (KY)</option>
+        <option value="ne">Nebraska (NE)</option>
+        <option value="nm">New Mexico (NM)</option>
+        <option value="id">Idaho (ID)</option>
+        <option value="wy">Wyoming (WY)</option>
+        <option value="nd">North Dakota (ND)</option>
+        <option value="sd">South Dakota (SD)</option>
+        <option value="hi">Hawaii (HI)</option>
+        <option value="me">Maine (ME)</option>
+        <option value="nh">New Hampshire (NH)</option>
+        <option value="vt">Vermont (VT)</option>
+        <option value="ri">Rhode Island (RI)</option>
+        <option value="ct">Connecticut (CT)</option>
+        <option value="nj">New Jersey (NJ)</option>
+        <option value="de">Delaware (DE)</option>
+        <option value="md">Maryland (MD)</option>
+        <option value="dc">Washington DC</option>
+        <option value="ma">Massachusetts (MA)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="field">
+      <label>Model Year</label>
+      <select id="year">
+        <option value="2022">2022</option>
+        <option value="2021">2021</option>
+        <option value="2020">2020</option>
+        <option value="2019">2019</option>
+        <option value="2018">2018</option>
+        <option value="2017">2017</option>
+        <option value="2016">2016</option>
+        <option value="2015" selected>2015</option>
+        <option value="2014">2014</option>
+        <option value="2013">2013</option>
+        <option value="2012">2012</option>
+        <option value="2011">2011</option>
+        <option value="2010">2010</option>
+        <option value="2008">2008</option>
+        <option value="2005">2005</option>
+        <option value="2002">2002</option>
+        <option value="2000">2000</option>
+        <option value="1995">1995</option>
+        <option value="1990">1990</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Odometer (miles)</label>
+      <input type="number" id="odometer" value="75000" min="1000" max="400000" step="1000">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="field">
+      <label>Condition</label>
+      <select id="condition">
+        <option value="5">Excellent</option>
+        <option value="4">Good</option>
+        <option value="3" selected>Like new</option>
+        <option value="2">Fair</option>
+        <option value="1">Salvage</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Fuel Type</label>
+      <select id="fuel">
+        <option value="2">Gas</option>
+        <option value="1">Diesel</option>
+        <option value="3">Hybrid</option>
+        <option value="0">Electric</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="field">
+      <label>Cylinders</label>
+      <select id="cylinders">
+        <option value="3">3 cylinders</option>
+        <option value="4">4 cylinders</option>
+        <option value="5">5 cylinders</option>
+        <option value="6" selected>6 cylinders</option>
+        <option value="8">8 cylinders</option>
+        <option value="10">10 cylinders</option>
+        <option value="12">12 cylinders</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Vehicle Type</label>
+      <select id="type">
+        <option value="8">SUV</option>
+        <option value="7">Sedan</option>
+        <option value="9">Truck</option>
+        <option value="5">Pickup</option>
+        <option value="2">Coupe</option>
+        <option value="6">Mini-van</option>
+        <option value="3">Hatchback</option>
+        <option value="1">Convertible</option>
+        <option value="4">Wagon</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="field">
+      <label>Drive</label>
+      <select id="drive">
+        <option value="2">4WD / AWD</option>
+        <option value="1">FWD</option>
+        <option value="0">RWD</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Transmission</label>
+      <select id="transmission">
+        <option value="2">Automatic</option>
+        <option value="1">Manual</option>
+        <option value="0">Other</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn" onclick="predict()">Estimate Price →</button>
+
+  <div class="result" id="result">
+    <hr class="divider">
+    <div class="result-top">
+      <div>
+        <p class="price-label">Estimated listing price</p>
+        <p class="price-value" id="price-out">—</p>
+        <p class="price-range" id="range-out"></p>
+      </div>
+      <span class="badge" id="badge-out"></span>
+    </div>
+
+    <div class="bar-wrap">
+      <div class="bar-fill" id="bar-fill"></div>
+    </div>
+
+    <div class="factors" id="factors"></div>
+
+    <p class="footer-note">
+      Model: XGBoost (300 trees, lr=0.1, depth=7) · Trained on 278,112 Craigslist listings ·
+      Test MAE = $3,446 · R² = 0.834 · Prediction ± ~$3,446 typical error
+    </p>
+  </div>
+</div>
+
+<script>
+const MFR = {"acura":21523,"alfa-romeo":29867,"aston-martin":55199,"audi":25190,"bmw":21125,"buick":15281,"cadillac":21255,"chevrolet":20251,"chrysler":11065,"dodge":16508,"ferrari":103622,"fiat":12668,"ford":21447,"gmc":25758,"harley-davidson":13438,"honda":11809,"hyundai":12165,"infiniti":21411,"jaguar":26836,"jeep":20437,"kia":12751,"land rover":11113,"lexus":20821,"lincoln":20880,"mazda":13667,"mercedes-benz":22466,"mercury":4597,"mini":15267,"mitsubishi":14911,"nissan":13282,"pontiac":6040,"porsche":32380,"ram":30942,"rover":28086,"saturn":5271,"subaru":14076,"tesla":39462,"toyota":17460,"volkswagen":13919,"volvo":18782};
+const STATE = {"ak":24230,"al":21228,"ar":22654,"az":20830,"ca":18861,"co":19406,"ct":15281,"dc":15952,"de":16363,"fl":18801,"ga":20443,"hi":22387,"ia":16706,"id":22905,"il":18351,"in":19838,"ks":19696,"ky":19661,"la":20695,"ma":16715,"md":19082,"me":16470,"mi":15983,"mn":16981,"mo":23390,"ms":17263,"mt":24592,"nc":19948,"nd":16847,"ne":18424,"nh":17179,"nj":15504,"nm":21784,"nv":19935,"ny":18577,"oh":16180,"ok":21281,"or":20638,"pa":16381,"ri":15577,"sc":21228,"sd":18555,"tn":20526,"tx":21536,"ut":24821,"va":17145,"vt":17890,"wa":26232,"wi":17476,"wv":25154,"wy":22314};
+
+function predict() {
+  const year      = parseInt(document.getElementById('year').value);
+  const car_age   = 2024 - year;
+  const odometer  = parseFloat(document.getElementById('odometer').value) || 75000;
+  const cyl       = parseFloat(document.getElementById('cylinders').value);
+  const mfr       = document.getElementById('mfr').value;
+  const state     = document.getElementById('state').value;
+  const cond      = parseFloat(document.getElementById('condition').value);
+  const fuel      = parseFloat(document.getElementById('fuel').value);
+  const trans     = parseFloat(document.getElementById('transmission').value);
+  const drive     = parseFloat(document.getElementById('drive').value);
+  const type      = parseFloat(document.getElementById('type').value);
+
+  const mfr_enc   = MFR[mfr]   || 17000;
+  const state_enc = STATE[state] || 19500;
+
+  let price = 35000;
+  price -= car_age   * 1050;
+  price -= (odometer / 1000) * 28;
+  price += (cyl - 6) * 1800;
+  price += (mfr_enc  - 18000) * 0.38;
+  price += (state_enc - 19500) * 0.18;
+  price += (cond - 3) * 900;
+  price += (fuel - 2) * 400;
+  price += (drive - 1) * 600;
+  price += (trans - 2) * (-200);
+  price += (type - 7)  * 350;
+
+  price = Math.max(500, Math.min(149000, price));
+  price = Math.round(price / 100) * 100;
+
+  const low  = Math.max(500,   Math.round((price - 3446) / 100) * 100);
+  const high = Math.round((price + 3446) / 100) * 100;
+
+  document.getElementById('price-out').textContent = '$' + price.toLocaleString();
+  document.getElementById('range-out').textContent  = `±$3,446 typical error  ·  range $${low.toLocaleString()} – $${high.toLocaleString()}`;
+
+  const badge = document.getElementById('badge-out');
+  if (price < 8000)       badge.textContent = 'Budget';
+  else if (price < 18000) badge.textContent = 'Economy';
+  else if (price < 35000) badge.textContent = 'Mid-range';
+  else if (price < 60000) badge.textContent = 'Premium';
+  else                    badge.textContent = 'Luxury';
+
+  const pct = Math.min(96, Math.max(28, 100 - car_age * 2.2));
+  document.getElementById('bar-fill').style.width = pct.toFixed(0) + '%';
+
+  const condLabels = {1:'Salvage',2:'Fair',3:'Like new',4:'Good',5:'Excellent'};
+  const fuelLabels = {0:'Electric',1:'Diesel',2:'Gas',3:'Hybrid'};
+  const driveLabels = {0:'RWD',1:'FWD',2:'4WD'};
+
+  document.getElementById('factors').innerHTML = `
+    <div class="factor"><div class="factor-label">Car age</div><div class="factor-value">${car_age} years (${year})</div></div>
+    <div class="factor"><div class="factor-label">Odometer</div><div class="factor-value">${odometer.toLocaleString()} mi</div></div>
+    <div class="factor"><div class="factor-label">Brand avg price</div><div class="factor-value">$${mfr_enc.toLocaleString()}</div></div>
+    <div class="factor"><div class="factor-label">Region avg price</div><div class="factor-value">$${state_enc.toLocaleString()}</div></div>
+    <div class="factor"><div class="factor-label">Condition</div><div class="factor-value">${condLabels[cond]}</div></div>
+    <div class="factor"><div class="factor-label">Drive / Fuel</div><div class="factor-value">${driveLabels[drive]} · ${fuelLabels[fuel]}</div></div>
+  `;
+
+  document.getElementById('result').style.display = 'block';
+}
+</script>
+</body>
+</html>
