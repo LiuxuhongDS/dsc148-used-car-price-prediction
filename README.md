@@ -18,11 +18,11 @@ This project predicts used car listing prices on Craigslist using machine learni
 ## Repository Structure
 
 ```
-├── notebook.ipynb        # Full pipeline: EDA → cleaning → features → models → ablation
-├── requirements.txt      # Python dependencies
+├── notebook.ipynb
+├── demo.html
+├── requirements.txt
 ├── README.md
-└── report/
-    └── DSC148_Project_Report.docx
+└── DSC148_Project_Report_v3.docx
 ```
 
 ---
