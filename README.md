@@ -72,6 +72,6 @@ jupyter notebook notebook.ipynb
 See `requirements.txt`
 ## Demo
 
-Try the live price estimator: https://liuxuhongds.github.io/dsc148-used-car-price-prediction/demo.html
+Live demo: https://liuxuhongds.github.io/dsc148-used-car-price-prediction/demo.html
 
 No installation required — runs in any browser.
